@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>鱼跃灯明 · 鱼灯工坊 VR 全景</title>
+<link rel="stylesheet" href="lib/pannellum.css">
+<style>
+:root { --red: #b8231c; --red2: #d9412f; --gold: #e3b456; --ink: #2b1a10; --paper: #f4ead5;
+  --kai: "STKaiti", "KaiTi", "楷体", "Kaiti SC", "STXingkai", serif; --sans: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #120c08; font-family: var(--sans); color: #fff; user-select: none; }
+button { font-family: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+
+/* ---------- 全景 ---------- */
+#pano { position: fixed; inset: 0; }
+.pnlm-container { background: #1a120c !important; }
+.pnlm-load-box, .pnlm-about-msg { display: none !important; }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.vignette { position: fixed; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(ellipse at center, transparent 55%, rgba(20,8,2,.42) 100%); }
+
+/* 顶部提示框：制作鱼灯 */
+#makeBtn { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 14px;
+  padding: 10px 30px 10px 14px; border-radius: 40px; background: linear-gradient(180deg, #d63a2a, #a3170f);
+  box-shadow: 0 0 0 2px rgba(240,196,110,.85), 0 0 0 6px rgba(184,35,28,.25), 0 10px 30px rgba(120,20,10,.5); animation: breathe 2.4s ease-in-out infinite; }
+#makeBtn .fish-ico { width: 44px; height: 44px; border-radius: 50%; background: #f7ecd3; display: grid; place-items: center; color: var(--red); font: 700 24px var(--kai); box-shadow: inset 0 0 0 2px var(--gold); }
+#makeBtn b { font: 700 26px var(--kai); letter-spacing: 6px; color: #fff3d6; text-shadow: 0 2px 6px rgba(0,0,0,.3); }
+#makeBtn small { display: block; font-size: 12px; letter-spacing: 2px; color: #ffd9a8; opacity: .9; }
+#makeBtn::after { content: ""; position: absolute; inset: -4px; border-radius: 44px; border: 2px solid rgba(255,214,140,.7); animation: ripple 2.4s ease-out infinite; }
+#makeBtn:hover { filter: brightness(1.08); }
+@keyframes breathe { 50% { transform: translateX(-50%) scale(1.04); } }
+@keyframes ripple { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.25, 1.6); } }
+
+.hud { position: fixed; right: 22px; bottom: 26px; z-index: 5; display: flex; flex-direction: column; gap: 12px; }
+.hud button, .music-btn { width: 48px; height: 48px; border-radius: 50%; background: rgba(40,20,12,.55); backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1.5px rgba(227,180,86,.7);
+  display: grid; place-items: center; font: 600 15px var(--kai); color: #ffe7b8; transition: .25s; }
+.hud button:hover { background: rgba(184,35,28,.75); }
+.hud button.off, .music-btn.off { opacity: .55; }
+.music-btn svg { width: 22px; height: 22px; }
+.music-btn:not(.off) svg { animation: spin 4s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tip { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 5; padding: 8px 20px; border-radius: 20px; background: rgba(30,15,8,.45); backdrop-filter: blur(4px);
+  font-size: 13px; letter-spacing: 2px; color: #f5dfb8; }
+.brand { position: fixed; left: 26px; top: 24px; z-index: 5; writing-mode: vertical-rl; font: 700 34px var(--kai); letter-spacing: 10px; color: #fff4dc; text-shadow: 0 2px 12px rgba(80,20,0,.6); }
+.brand i { display: inline-block; margin-top: 12px; font: 400 14px var(--kai); letter-spacing: 4px; color: #ffd59a; font-style: normal; }
+body.in-ws #makeBtn, body.in-ws .hud, body.in-ws .tip, body.in-ws .brand { opacity: 0; pointer-events: none; }
+
+/* 全景热点 */
+.hs-make { width: 64px; height: 64px; cursor: pointer; }
+.hs-make .hs-dot { position: absolute; inset: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff6a4f, #b8231c); box-shadow: 0 0 0 2px #f2c46e, 0 0 24px rgba(255,120,60,.9);
+  display: grid; place-items: center; font: 700 22px var(--kai); color: #fff4da; }
+.hs-make .hs-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255,214,140,.9); animation: hsr 1.8s ease-out infinite; }
+.hs-make .hs-label { position: absolute; left: 50%; top: 68px; transform: translateX(-50%); white-space: nowrap; padding: 4px 12px; border-radius: 12px; background: rgba(150,22,14,.85);
+  font: 600 15px var(--kai); letter-spacing: 3px; color: #fff0d0; box-shadow: 0 0 0 1px rgba(242,196,110,.8); }
+@keyframes hsr { 0% { transform: scale(.7); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+.hs-mine { pointer-events: none; }
+.hs-mine img { width: 100%; height: 100%; animation: bob 4.2s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(255,180,90,.8)); }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+
+#toast { position: fixed; left: 50%; top: 110px; transform: translate(-50%, -20px); z-index: 50; padding: 10px 26px; border-radius: 24px; background: rgba(150,22,14,.92);
+  box-shadow: 0 0 0 1.5px var(--gold); font: 600 16px var(--kai); letter-spacing: 3px; color: #fff2d6; opacity: 0; transition: .4s; pointer-events: none; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- 开场 ---------- */
+#splash { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; overflow: hidden; background: #1a0f08; transition: opacity 1s, transform 1s; }
+#splash::before { content: ""; position: absolute; inset: -30px; background: var(--splash-bg, none) center/cover; filter: blur(14px) brightness(.55) saturate(1.2); }
+#splash.gone { opacity: 0; transform: scale(1.06); pointer-events: none; }
+.splash-in { position: relative; text-align: center; }
+.splash-in h1 { font: 700 76px var(--kai); letter-spacing: 22px; color: #fff3d8; text-shadow: 0 4px 30px rgba(255,120,40,.6); }
+.splash-in p { margin-top: 10px; font: 400 18px var(--kai); letter-spacing: 8px; color: #ffd9a0; }
+#enterBtn { margin-top: 46px; padding: 14px 54px; border-radius: 34px; background: linear-gradient(180deg, #d63a2a, #a3170f); box-shadow: 0 0 0 2px var(--gold), 0 12px 30px rgba(0,0,0,.4);
+  font: 700 22px var(--kai); letter-spacing: 8px; color: #fff3d6; opacity: .45; transition: .4s; }
+#enterBtn.ready { opacity: 1; animation: breathe2 2.4s ease-in-out infinite; }
+@keyframes breathe2 { 50% { transform: scale(1.05); } }
+#splashStatus { margin-top: 16px; font-size: 13px; letter-spacing: 3px; color: #e9c99a; opacity: .8; }
+
+/* ---------- 工坊（16:9 舞台） ---------- */
+#ws { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: #140d08;
+  opacity: 0; pointer-events: none; transition: opacity .6s; }
+#ws.open { opacity: 1; pointer-events: auto; }
+#stage { position: relative; overflow: hidden; --u: 1px; font-size: calc(var(--u) * 20); transform: scale(.96); transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+#ws.open #stage { transform: scale(1); }
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#wsArt { touch-action: none; }
+#ws[data-step="draw"] #wsArt { cursor: crosshair; }
+.panel { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .5s; }
+.panel > * { pointer-events: auto; }
+#ws[data-step="pick"] #pPick, #ws[data-step="draw"] #pDraw, #ws[data-step="show"] #pShow { opacity: 1; }
+#ws:not([data-step="pick"]) #pPick > *, #ws:not([data-step="draw"]) #pDraw > *, #ws:not([data-step="show"]) #pShow > * { pointer-events: none; }
+
+.ws-top { position: absolute; left: calc(var(--u)*30); top: calc(var(--u)*26); display: flex; gap: calc(var(--u)*14); z-index: 3; }
+.ws-btn { height: calc(var(--u)*48); min-width: calc(var(--u)*48); padding: 0 calc(var(--u)*18); border-radius: calc(var(--u)*24); background: rgba(255,250,238,.75);
+  box-shadow: 0 0 0 calc(var(--u)*1.5) rgba(120,80,40,.35); font: 600 calc(var(--u)*19) var(--kai); color: #4a2a16; letter-spacing: calc(var(--u)*2); display: grid; place-items: center; }
+#ws[data-step="show"] .ws-btn { background: rgba(40,20,30,.55); color: #ffe6b8; box-shadow: 0 0 0 calc(var(--u)*1.5) rgba(227,180,86,.6); }
+.ws-right { position: absolute; right: calc(var(--u)*30); top: calc(var(--u)*26); display: flex; gap: calc(var(--u)*14); z-index: 3; }
+.ws-right .music-btn { width: calc(var(--u)*48); height: calc(var(--u)*48); background: rgba(255,250,238,.75); color: #4a2a16; box-shadow: 0 0 0 calc(var(--u)*1.5) rgba(120,80,40,.35); }
+#ws[data-step="show"] .ws-right .music-btn { background: rgba(40,20,30,.55); color: #ffe6b8; }
+
+.vtitle { position: absolute; left: calc(var(--u)*70); top: calc(var(--u)*110); writing-mode: vertical-rl; font: 700 calc(var(--u)*62) var(--kai); letter-spacing: calc(var(--u)*14); color: #2e1a0e; }
+.vtitle small { display: block; margin-top: calc(var(--u)*16); font: 400 calc(var(--u)*18) var(--kai); letter-spacing: calc(var(--u)*6); color: #8a5a34; }
+.vtitle .stamp { display: inline-block; margin-top: calc(var(--u)*18); padding: calc(var(--u)*6) calc(var(--u)*4); border: calc(var(--u)*2) solid var(--red); color: var(--red); font-size: calc(var(--u)*18); letter-spacing: calc(var(--u)*2); border-radius: calc(var(--u)*3); }
+#pShow .vtitle { color: #fff1d4; text-shadow: 0 0 calc(var(--u)*20) rgba(255,140,60,.7); }
+#pShow .vtitle small { color: #ffcf8f; }
+
+.btn-red { position: absolute; height: calc(var(--u)*76); padding: 0 calc(var(--u)*70); border-radius: calc(var(--u)*12); background: linear-gradient(180deg, #d4402e, #9e1a12);
+  box-shadow: 0 0 0 calc(var(--u)*2) #e8bd69, inset 0 0 0 calc(var(--u)*5) #b8231c, inset 0 0 0 calc(var(--u)*6.5) rgba(240,196,110,.7), 0 calc(var(--u)*10) calc(var(--u)*24) rgba(120,20,10,.35);
+  font: 700 calc(var(--u)*32) var(--kai); letter-spacing: calc(var(--u)*12); color: #fff3d6; transition: transform .2s, filter .2s; }
+.btn-red:hover { filter: brightness(1.08); transform: translateY(calc(var(--u)*-2)); }
+.btn-red:active { transform: scale(.97); }
+
+/* 选鱼卡片 */
+.pick-head { position: absolute; left: 0; right: 0; top: calc(var(--u)*70); text-align: center; }
+.pick-head h2 { font: 700 calc(var(--u)*50) var(--kai); letter-spacing: calc(var(--u)*18); color: #2e1a0e; }
+.pick-head p { margin-top: calc(var(--u)*8); font: 400 calc(var(--u)*19) var(--kai); letter-spacing: calc(var(--u)*6); color: #8a5a34; }
+#cards { position: absolute; left: calc(var(--u)*120); right: calc(var(--u)*120); top: calc(var(--u)*230); height: calc(var(--u)*420); display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--u)*30); }
+.card { position: relative; border-radius: calc(var(--u)*16); background: rgba(255,251,242,.72); box-shadow: 0 0 0 calc(var(--u)*1.5) rgba(140,95,50,.35), 0 calc(var(--u)*10) calc(var(--u)*26) rgba(90,55,25,.12);
+  display: flex; flex-direction: column; align-items: center; padding: calc(var(--u)*16) calc(var(--u)*10) calc(var(--u)*18); transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; color: #2e1a0e; }
+.card canvas { position: relative !important; width: 100% !important; height: calc(var(--u)*250) !important; transition: transform .5s; }
+.card:hover { transform: translateY(calc(var(--u)*-8)); }
+.card:hover canvas { transform: rotate(-2deg) scale(1.04); }
+.card.sel { transform: translateY(calc(var(--u)*-14)); background: rgba(255,248,232,.95); box-shadow: 0 0 0 calc(var(--u)*3) var(--red), 0 0 0 calc(var(--u)*8) rgba(184,35,28,.15), 0 calc(var(--u)*20) calc(var(--u)*40) rgba(120,40,20,.25); }
+.card-name { margin-top: calc(var(--u)*10); font: 700 calc(var(--u)*32) var(--kai); letter-spacing: calc(var(--u)*6); }
+.card-mean { margin-top: calc(var(--u)*8); font: 400 calc(var(--u)*17) var(--kai); letter-spacing: calc(var(--u)*3); color: #8a5a34; }
+.card .seal { position: absolute; right: calc(var(--u)*14); top: calc(var(--u)*14); width: calc(var(--u)*40); height: calc(var(--u)*40); border-radius: calc(var(--u)*6); background: var(--red); color: #fff0d6;
+  font: 700 calc(var(--u)*22) var(--kai); display: grid; place-items: center; transform: scale(0) rotate(-30deg); transition: .35s cubic-bezier(.3,1.6,.5,1); }
+.card.sel .seal { transform: scale(1) rotate(-8deg); }
+#btnTry { left: 50%; bottom: calc(var(--u)*80); transform: translateX(-50%); }
+#btnTry:hover { transform: translateX(-50%) translateY(calc(var(--u)*-2)); }
+
+/* 画身工具栏 */
+#drawHint { position: absolute; left: 0; right: 0; top: calc(var(--u)*34); text-align: center; font: 400 calc(var(--u)*20) var(--kai); letter-spacing: calc(var(--u)*5); color: #6a4528; transition: opacity .6s; }
+#drawHint.dim { opacity: .45; }
+.toolbar { position: absolute; left: calc(var(--u)*40); right: calc(var(--u)*40); bottom: calc(var(--u)*28); height: calc(var(--u)*150); border-radius: calc(var(--u)*20);
+  background: linear-gradient(180deg, rgba(252,246,232,.94), rgba(240,228,204,.94)); box-shadow: 0 0 0 calc(var(--u)*1.5) rgba(140,95,50,.4), 0 calc(var(--u)*12) calc(var(--u)*30) rgba(80,45,15,.18);
+  display: flex; align-items: center; padding: 0 calc(var(--u)*26); gap: calc(var(--u)*26); }
+.tool-label { writing-mode: vertical-rl; font: 700 calc(var(--u)*20) var(--kai); letter-spacing: calc(var(--u)*4); color: var(--red); border-left: calc(var(--u)*2) solid rgba(184,35,28,.3); padding-left: calc(var(--u)*8); }
+#swatches { display: flex; gap: calc(var(--u)*12); }
+.swatch { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u)*6); color: #5a3a22; font: 400 calc(var(--u)*15) var(--kai); }
+.swatch i { width: calc(var(--u)*56); height: calc(var(--u)*56); border-radius: 50%; box-shadow: inset 0 calc(var(--u)*-6) calc(var(--u)*10) rgba(0,0,0,.25), 0 0 0 calc(var(--u)*3) #fbf5e8, 0 0 0 calc(var(--u)*4.5) rgba(120,80,40,.3); transition: transform .25s; }
+.swatch:hover i { transform: translateY(calc(var(--u)*-3)); }
+.swatch.sel i { transform: scale(1.12); box-shadow: inset 0 calc(var(--u)*-6) calc(var(--u)*10) rgba(0,0,0,.25), 0 0 0 calc(var(--u)*3) #fbf5e8, 0 0 0 calc(var(--u)*6) #c69a45; }
+.swatch.sel span { color: var(--red); font-weight: 700; }
+.sizes { display: flex; gap: calc(var(--u)*8); }
+.size-btn { width: calc(var(--u)*56); height: calc(var(--u)*72); border-radius: calc(var(--u)*10); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u)*6);
+  color: #5a3a22; font: 400 calc(var(--u)*15) var(--kai); background: rgba(255,255,255,.4); box-shadow: 0 0 0 calc(var(--u)*1) rgba(120,80,40,.25); }
+.size-btn em { display: block; border-radius: 50%; background: #3a2414; }
+.size-btn.sel { background: rgba(184,35,28,.1); box-shadow: 0 0 0 calc(var(--u)*2) var(--red); color: var(--red); }
+.acts { display: flex; gap: calc(var(--u)*8); }
+.act { width: calc(var(--u)*64); height: calc(var(--u)*72); border-radius: calc(var(--u)*10); color: #5a3a22; font: 400 calc(var(--u)*15) var(--kai);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u)*4); background: rgba(255,255,255,.4); box-shadow: 0 0 0 calc(var(--u)*1) rgba(120,80,40,.25); }
+.act b { font-size: calc(var(--u)*26); line-height: 1; }
+.act:hover { color: var(--red); }
+#btnGen { position: relative; margin-left: auto; height: calc(var(--u)*92); padding: 0 calc(var(--u)*46); font-size: calc(var(--u)*34); }
+
+/* 生成 / 展示 */
+#genTip { position: absolute; left: 0; right: 0; bottom: calc(var(--u)*70); text-align: center; font: 600 calc(var(--u)*26) var(--kai); letter-spacing: calc(var(--u)*10); color: #6a4528; opacity: 0; transition: opacity .5s, color 1s; }
+#genTip.on { opacity: 1; }
+#genTip span { display: inline-block; animation: wave 1.2s ease-in-out infinite; }
+@keyframes wave { 50% { transform: translateY(calc(var(--u)*-6)); color: var(--red); } }
+#showActions { position: absolute; left: 0; right: 0; bottom: calc(var(--u)*48); display: flex; justify-content: center; gap: calc(var(--u)*24); opacity: 0; transform: translateY(calc(var(--u)*30)); transition: .7s cubic-bezier(.2,.8,.2,1); }
+#showActions.on { opacity: 1; transform: none; }
+#showActions:not(.on) > * { pointer-events: none; }
+.gbtn { width: calc(var(--u)*220); height: calc(var(--u)*66); border-radius: calc(var(--u)*8); background: rgba(30,14,22,.5); box-shadow: 0 0 0 calc(var(--u)*1.5) rgba(227,180,86,.8), inset 0 0 0 calc(var(--u)*5) rgba(30,14,22,.4), inset 0 0 0 calc(var(--u)*6) rgba(227,180,86,.35);
+  font: 600 calc(var(--u)*24) var(--kai); letter-spacing: calc(var(--u)*6); color: #ffe6b8; transition: .25s; backdrop-filter: blur(4px); }
+.gbtn:hover { background: rgba(184,35,28,.6); transform: translateY(calc(var(--u)*-3)); }
+.gbtn.main { background: linear-gradient(180deg, #d4402e, #9e1a12); color: #fff3d6; }
+.show-note { position: absolute; left: 0; right: 0; top: calc(var(--u)*36); text-align: center; font: 400 calc(var(--u)*19) var(--kai); letter-spacing: calc(var(--u)*6); color: #ffd9a6; opacity: 0; transition: opacity 1s .4s; }
+#showActions.on ~ .show-note { opacity: .9; }
+</style>
+</head>
+<body>
+<div id="pano"></div>
+<canvas id="fx"></canvas>
+<div class="vignette"></div>
+
+<div class="brand">鱼跃灯明<i>非遗鱼灯 · 360° 全景展厅</i></div>
+<button id="makeBtn"><span class="fish-ico">鱼</span><span><b>制作鱼灯</b><small>点此亲手绘一盏非遗鱼灯</small></span></button>
+<div class="hud">
+  <button class="music-btn off" title="音乐"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 0 1 9 9"/></svg></button>
+  <button id="btnRotate" title="自动漫游">游</button>
+  <button id="btnHome" title="回到正面">正</button>
+  <button id="btnFull" title="全屏">全</button>
+</div>
+<div class="tip">拖动 / 滑动环视 360° · 滚轮或双指缩放</div>
+<div id="toast"></div>
+
+<div id="splash">
+  <div class="splash-in">
+    <h1>鱼跃灯明</h1>
+    <p>竹篾为骨 · 宣纸为身 · 华纹由你</p>
+    <button id="enterBtn" disabled>进入展厅</button>
+    <div id="splashStatus">展厅加载中…</div>
+  </div>
+</div>
+
+<div id="ws" data-step="pick">
+  <div id="stage">
+    <canvas id="wsBg"></canvas>
+    <canvas id="wsArt"></canvas>
+    <div class="ws-top"><button class="ws-btn" id="btnBack">‹ 返回</button><button class="ws-btn" id="wsClose">回展厅</button></div>
+    <div class="ws-right"><button class="music-btn off" title="音乐"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 0 1 9 9"/></svg></button></div>
+
+    <section class="panel" id="pPick">
+      <div class="pick-head"><h2>择一尾鱼灯</h2><p>四种徽州鱼灯骨架 · 选好后亲手为它画身</p></div>
+      <div id="cards"></div>
+      <button class="btn-red" id="btnTry">亲手试画</button>
+    </section>
+
+    <section class="panel" id="pDraw">
+      <div class="vtitle">画身<small id="drawTitle">锦绣红鳞</small></div>
+      <div id="drawHint">宣纸已蒙上竹骨 · 在鱼身上随意勾勒，每一笔都会化作华纹</div>
+      <div class="toolbar">
+        <span class="tool-label">颜料</span>
+        <div id="swatches"></div>
+        <span class="tool-label">笔锋</span>
+        <div class="sizes">
+          <button class="size-btn" data-s="8"><em style="width:calc(var(--u)*8);height:calc(var(--u)*8)"></em>细</button>
+          <button class="size-btn sel" data-s="16"><em style="width:calc(var(--u)*15);height:calc(var(--u)*15)"></em>中</button>
+          <button class="size-btn" data-s="28"><em style="width:calc(var(--u)*24);height:calc(var(--u)*24)"></em>粗</button>
+        </div>
+        <div class="acts"><button class="act" id="btnUndo"><b>↶</b>撤一笔</button><button class="act" id="btnClear"><b>◌</b>清空</button></div>
+        <button class="btn-red" id="btnGen">生成华纹</button>
+      </div>
+    </section>
+
+    <section class="panel" id="pShow">
+      <div class="vtitle">鱼跃灯明<small>你的笔画 · 已化作华纹</small></div>
+      <div id="genTip"><span>华</span><span style="animation-delay:.15s">纹</span><span style="animation-delay:.3s">生</span><span style="animation-delay:.45s">成</span><span style="animation-delay:.6s">中</span></div>
+      <div id="showActions">
+        <button class="gbtn" id="btnRedraw">重新绘制</button>
+        <button class="gbtn" id="btnNew">换一尾鱼</button>
+        <button class="gbtn" id="btnSave">保存图片</button>
+        <button class="gbtn main" id="btnHang">挂入展厅</button>
+      </div>
+      <div class="show-note">灯起 · 鱼游 · 年年有余</div>
+    </section>
+  </div>
+</div>
+
+<script src="lib/pannellum.js"></script>
+<script src="source-data.js"></script>
+<script src="fish.js"></script>
+<script src="app.js"></script>
+<script src="workshop.js"></script>
+</body>
+</html>
